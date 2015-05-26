@@ -1,0 +1,8 @@
+http://www2.kenyon.edu/Depts/Math/hartlaub/Math305%20Fall2011/R.htm
+https://stat.ethz.ch/R-manual/R-patched/library/base/html/summary.html
+https://cooldata.wordpress.com/2010/04/19/how-high-r-squared/
+http://www.cyclismo.org/tutorial/R/linearLeastSquares.html
+http://personality-project.org/r/r.lm.html
+http://data.princeton.edu/R/linearModels.html
+
+and some more that has been used for trouble shooting and research but unfortunately not listed

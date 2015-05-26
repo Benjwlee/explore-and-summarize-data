@@ -1,0 +1,633 @@
+Prosper Loan Exploration by Benjamin Lee
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+library(dplyr)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+setwd('C:/move - bwlee/Data Analysis/Nano/Data Analysis with R Subtitles/project')
+loan<-read.csv('prosperLoanData.csv', sep=',')
+loan$LoanStatus<-factor(loan$LoanStatus)
+loan$CurrentlyInGroup<-factor(loan$CurrentlyInGroup)
+loan$ListingCategory_numeric<-factor(loan$ListingCategory_numeric,labels=c("0-NotAvailable","1-DebtConsolidation","2-HomeImprovement","3-Business","4-PersonalLoan","5-StudentUse","6-Auto","7-Other","8-Baby&Adoption","9-Boat","10-CosmeticProcedure","11-EngagementRing","12-GreenLoans","13-HouseholdExpenses","14-LargePurchases","15-Medical/Dental","16-Motorcycle","17-RV","18-Taxes","19-Vacation","20-WeddingLoans"))
+loan$BorrowerState<-factor(loan$BorrowerState)
+loan$IsBorrowerHomeowner<-factor(loan$IsBorrowerHomeowner)
+loan$ProsperScore<-factor(loan$ProsperScore)
+
+loan$ProsperRating_Alpha<-factor(loan$ProsperRating_Alpha)
+
+loan$ProsperRating_numeric<-factor(loan$ProsperRating_numeric)
+loan$CreditGrade<-factor(loan$CreditGrade)
+loan$Term<-factor(loan$Term)
+loan$OpenCreditLines<-factor(loan$OpenCreditLines)
+loan$CurrentCreditLines<-factor(loan$CurrentCreditLines)
+loan$Occupation<-factor(loan$Occupation)
+loan$EmploymentStatus<-factor(loan$EmploymentStatus)
+loan$IncomeRange<-factor(loan$IncomeRange)
+loan$IncomeVerifiable<-factor(loan$IncomeVerifiable)
+loan$TotalProsperLoans<-factor(loan$TotalProsperLoans)
+names(loan)
+str(loan)
+summary(loan)
+```
+
+# Univariate Plots Section
+```{r echo=FALSE, Univariate_Plots}
+ggplot(loan,aes(Term))+geom_histogram()+ggtitle("Distribution of Terms in loan")
+ggplot(loan,aes(LoanStatus))+geom_histogram()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Loan status distribution")
+ggplot(loan,aes(EstimatedEffectiveYield))+geom_histogram()+ggtitle("Loan Estimatd Effective Yield")
+ggplot(loan,aes(EstimatedLoss))+geom_histogram()+ggtitle("Loan Estimatd Loss")
+ggplot(loan,aes(EstimatedReturn))+geom_histogram()+ggtitle("Loan Estimatd Return")
+ggplot(loan,aes(ProsperRating_numeric))+geom_histogram()+ggtitle("Prosper Rating Numeric")
+ggplot(loan,aes(ProsperRating_Alpha))+geom_histogram()+scale_x_discrete(limits=c("HR","E","D","C","B","A","AA",""))+ggtitle("Prosper Rating Alpha")
+ggplot(loan,aes(EmploymentStatus))+geom_histogram()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Loan Employment Status")
+ggplot(loan,aes(EmploymentStatusDuration))+geom_histogram()+
+  ggtitle("Loan Employment Status Duration")
+ggplot(loan,aes(empidx))+geom_histogram()+
+  ggtitle("Loan Employment Index (Status times Duration)")
+ggplot(loan,aes(IsBorrowerHomeowner))+geom_histogram()+
+  ggtitle("Borrower own home?")
+ggplot(na.omit(loan),aes(DebtToIncomeRatio))+geom_histogram()+scale_x_log10()+
+  ggtitle("Debt To Income Ratio (log10(x))")
+ggplot(na.omit(loan),aes(IncomeRange))+geom_histogram()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Income Ranges")
+ggplot(na.omit(loan),aes(LoanCurrentDaysDelinquent))+geom_histogram()+
+  ggtitle("Number days of been delinquent")
+ggplot(na.omit(loan),aes(LoanMonthsSinceOrigination))+geom_histogram()+
+  ggtitle("Number of months since loan originated")
+ggplot(na.omit(loan),aes(LoanOriginalAmount))+geom_histogram()+
+  ggtitle("Loan Original Amount")
+ggplot(na.omit(loan),aes(LoanOriginationQuarter))+geom_histogram()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Loan Origination Quarter")
+ggplot(na.omit(loan),aes(MonthlyLoanPayment))+geom_histogram()+
+  ggtitle("Monthly Loan Payment")
+ggplot(na.omit(loan),aes(LP_CustomerPayments))+geom_histogram()+
+  ggtitle("Pre charge-off cumulative gross payments made by the borrower on the loan. If the loan has charged off, this value will exclude any recoveries.")
+ggplot(na.omit(loan),aes(LP_CustomerPrincipalPayments))+geom_histogram()+scale_x_log10()+
+  ggtitle("Pre charge-off cumulative principal payments made by the borrower on the loan. If the loan has charged off, this value will exclude any recoveries.")
+ggplot(na.omit(loan),aes(LP_InterestandFees))+geom_histogram()+
+  ggtitle("Pre charge-off cumulative interest and fees paid by the borrower. If the loan has  charged off, this value will exclude any recoveries.")
+ggplot(loan,aes(LP_GrossPrincipalLoss))+geom_histogram()+scale_y_log10()+
+  ggtitle("The gross charged off amount of the loan.")
+ggplot(subset(loan,LP_GrossPrincipalLoss>0),aes(LP_GrossPrincipalLoss))+geom_histogram()+
+  ggtitle("The principal that remains uncollected after any recoveries.")
+```
+
+# Univariate Analysis
+
+### What is the structure of your dataset?  
+Investment seems to be a difficult process. As much of analysis efforts spent, it shows data seems not following a specific pattern. Unlike any natural products, financial has a very distinct human factor.  
+### What is/are the main feature(s) of interest in your dataset?  
+I set out to find out how does the investment return reflected in the prosper loan data. And what is the time elapsed impact to profitability in prosper loan program.  
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?  
+In study relationship of all spectrum of this data:  
+.  Employment status  
+.  Delinquency, public record present and past  
+.  Job category  
+.  Loan history  
+.  Credit rating of various sources (credit scores, ratings, bank cards, revolving credits, tradelines)  
+.  Purpose of loan (ListingCategory)  
+.  Date of loan as may be related to economical cycles  
+.  Financial situation (Income, home ownership, DebtToIncomeRatio)  
+.  Cash committed (In turns of fees, interests, and principles). This can be related to age of existing loan.  
+
+### Did you create any new variables from existing variables in the dataset?
+
+Additional field "occupationCategory" has been added to assist study into Occupancy field:  
+Category Civil:  
+.  Civil Service  
+.  Social Worker  
+.	Clergy  
+.	ReligiousClergy  
+.	Religious  
+Category Medical:  
+.	Dentist  
+.	Doctor  
+.	Medical Technician  
+.	Nurse's Aide  
+.	Nurse (LPN)  
+.	Nurse (RN)  
+Category Professional:  
+.	Judge  
+.	Accountant/CPA  
+.	Chemist  
+.	Computer Programmer  
+.	Engineer - Chemical  
+.	Engineer - Electrical  
+.	Engineer - Mechanical  
+.	Pilot - Private/Commercial  
+.	Pharmacist  
+.	Professional  
+.	Psychologist  
+.	Analyst  
+.	Architect  
+.	Attorney  
+.	Biologist  
+.	Scientist  
+Category Sales:  
+.	Car Dealer  
+.	Sales - Commission  
+.	Sales - Retail  
+.	Realtor  
+.	Retail Management  
+Category Exec:  
+.	Executive  
+.	Investor  
+Category Assistant:  
+.	Food Service  
+.	Food Service Management  
+.	Administrative Assistant  
+.	Clerical  
+.	Laborer  
+.	Waiter/Waitress  
+Category SkilledLabor:  
+.	Flight Attendant  
+.	Skilled Labor  
+.	Fireman  
+.	Police Officer/Correction Officer  
+.	Postal Service  
+.	Bus Driver  
+.	Construction  
+.	Truck Driver  
+.	Landscaping  
+Category Military:  
+.	Military Enlisted  
+.	Military Officer  
+Category Other:  
+.	Other  
+Category School:  
+.	Principal  
+.	Professor  
+.	Student - College Freshman  
+.	Student - College Graduate Student  
+.	Student - College Junior  
+.	Student - College Senior  
+.	Student - College Sophomore  
+.	Student - Community College  
+.	Student - Technical School  
+.	Teacher  
+.	Teacher's Aide  
+Category Tradesman:  
+.	Tradesman - Carpenter  
+.	Tradesman - Electrician  
+.	Tradesman - Mechanic  
+.	Tradesman - Plumber  
+Category Homemaker:  
+.	Homemaker  
+
+Combine EmploymentStatus and EmploymentStatusDuration to create a signle index empidx. With the following rule:
+
+.  Employed" score 2  
+.  Full-time score 3  
+.  Not available score 0  
+.  Not employed score -2  
+.  Other score 1  
+.  Part-time score 1  
+.  Retired score 3  
+.  Self-employed score 2  
+.  "" score 0  
+Finally, it is multiplied by EmploymentStatusDuration.  
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?  
+No particular curve is present with respect to yield or loss. It is difficult to apply any function to the scales to induce a reasonable linear relationship.  
+The LP_GrossPrincipalLoss is in the format of "Quarter Year". A script is written to change it to "Year Quarter" for smoother plotting.  
+# Bivariate Plots Section
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(loan,aes(ProsperRating_Alpha,EstimatedEffectiveYield))+
+  geom_boxplot()+stat_summary(fun.y=mean,geom='point',shape=4)+
+  scale_x_discrete(limits=c("HR","E","D","C","B","A","AA",""))+
+  ggtitle("Comparison of Estimated Effective Yield and Prosper Rating Alpha")
+```
+
+This plot shows a tightening of rates with higer grade of loan. Outliers below 0 are most likely from defaulted or charged loans.  
+```{r echo=FALSE}
+ggplot(loan,aes(LoanStatus,ProsperRating_Alpha,color=Term))+
+  geom_point(alpha=0.5,size=1,position="jitter")+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Comparison of Loan Status and Prosper Rating Alpha")
+```
+
+This plot does not show specific rating and loanStatus relationship.  
+```{r echo=FALSE}
+ggplot(subset(loan,ProsperRating_Alpha==""), aes(LoanStatus))+geom_histogram()+
+  ggtitle("LoanStatus distribution when ProsperRating_Alpha is blank")+
+  ggtitle("Histogram of Loan Status when Prosper Rating Alpha is blank")
+```
+
+For prosperRating equal to empty, there's a large proportion of chargeoff and defaulted loan.  
+```{r echo=FALSE}
+ggplot(loan,aes(LoanOriginationQuarter,EstimatedReturn,color=ProsperRating_Alpha))+
+  geom_point(alpha=0.5,size=1,position="jitter")+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Drawing of Estimated Return along Loan Origination Quarters")
+```
+
+This diagram shows a continued tightening of yield over time, and a very clear separation of rating  with respect to yield.  
+```{r echo=FALSE}
+ggplot(loan,aes(DebtToIncomeRatio,EstimatedEffectiveYield,
+                color=ProsperRating_Alpha))+geom_line(stat='summary',fun.y=mean)+
+  ggtitle("Comparison of Debt to Income Ratio and Estimated Effective Yield")
+```
+
+Does more debt means lower rate? Supposedly more debt means more risk. For higer grade borrowers, this plot suggests more debt results effective yield goes lower.  
+```{r echo=FALSE}
+ggplot(loan,aes(ListingCategory_numeric,EstimatedEffectiveYield))+geom_boxplot()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Comparison of Listing Category and Estimated Effective Yield")
+ggplot(loan,aes(ListingCategory_numeric,EstimatedLoss))+geom_boxplot()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=45,vjust=1))+
+  ggtitle("Comparison of Listing Category and Estimated Loss")
+```
+
+Plotting across listing category does not give clear indication either. The number one cause of a loan - debt consolidation, seems to be running just fine with respect to other kinds of loans.  
+Although, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other are the types of loan with risk, ever.  
+
+```{r echo=FALSE}
+ggplot(loan,aes(ProsperScore,EstimatedEffectiveYield))+geom_boxplot()+
+  ggtitle("Comparison of Prosper Score and Estimatd EffectiveYield")
+```
+
+Diagram indicates risk decreases as credit rating raise, but that tends to supress rates
+```{r echo=FALSE}
+
+ggplot(loan,aes(EmploymentStatus,EstimatedEffectiveYield))+geom_boxplot()+
+  ggtitle("Comparison of Employment Status and Estimated Effective Yield")
+ggplot(loan,aes(EmploymentStatus,EstimatedLoss))+geom_boxplot()+
+  ggtitle("Comparison of Employment Status and Estimated Loss")
+```
+
+Been unemployeed certainly will affect your rate, but the full-time employeed and self-employeed acturally is more risky as indicated by the outliers of the boxplot. And the loss plot suggests the risk does go up with been unemployed.  
+```{r echo=FALSE}
+
+xx<-loan %>%
+  group_by(BorrowerState, occupationCategory) %>%
+  summarise(EEffReturn_mean=mean(EstimatedReturn, na.rm=TRUE),
+            EEffReturn_median=median(EstimatedReturn, na.rm=TRUE),
+            n=n()) %>%
+  arrange(BorrowerState, occupationCategory)
+
+yy<-loan %>%
+  group_by(BorrowerState, occupationCategory) %>%
+  summarise(EEffLoss_mean=mean(EstimatedLoss, na.rm=TRUE),
+            EEffLoss_median=median(EstimatedEffectiveYield, na.rm=TRUE),
+            n=n()) %>%
+  arrange(BorrowerState, occupationCategory)
+
+zz<-loan %>%
+  group_by(BorrowerState, occupationCategory) %>%
+  summarise(EEff_mean=mean(EstimatedEffectiveYield, na.rm=TRUE),
+    EEff_median=median(EstimatedEffectiveYield, na.rm=TRUE),
+    n=n()) %>%
+  arrange(BorrowerState, occupationCategory)
+
+ggplot(xx,aes(x=BorrowerState,y=EEffReturn_median))+
+  geom_line()+geom_point()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=90,vjust=1))+
+  facet_wrap(~occupationCategory)+
+  ggtitle("Compare Borrower's State with Effective Return's Median")
+ggplot(yy,aes(x=BorrowerState,y=EEffLoss_median))+
+  geom_line()+geom_point()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=90,vjust=1))+
+  facet_wrap(~occupationCategory)+
+  ggtitle("Compare Borrower's State with Effective Loss's Median")
+ggplot(zz,aes(x=BorrowerState,y=EEff_median))+
+  geom_line()+geom_point()+
+  theme(text=element_text(size=10),axis.text.x=element_text(angle=90,vjust=1))+
+  facet_wrap(~occupationCategory)+
+  ggtitle("Compare Borrower's State with Effective Yield's Median")
+
+```
+
+Compare occupation category and return/loss/yield. Difficult to tell if there's a relationship.
+```{r echo=FALSE}
+
+p1<-ggplot(loan,aes(IsBorrowerHomeowner,EstimatedEffectiveYield))+geom_boxplot()+
+  ggtitle("Compare Borrower's Home Ownership with Yield")
+p2<-ggplot(loan,aes(IsBorrowerHomeowner,EstimatedLoss))+geom_boxplot()+
+  ggtitle("Compare Borrower's Home Ownership with Loss")
+grid.arrange(p1,p2,ncol=2)
+
+```
+
+Not been a homeowner has a slight higher risk, as a result, higher rate.
+```{r echo=FALSE}
+
+ggplot(loan,aes(LoanMonthsSinceOrigination,EstimatedEffectiveYield))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Loan Months Since Origination an Estimated Effective Yield")
+
+```
+
+And it seems when loan reaches month 38, we are start seeing failures.  
+```{r echo=FALSE}
+ggplot(loan,aes(LoanOriginalAmount,EstimatedEffectiveYield))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Loan Original Amount with Estimated Effective Yield")
+ggplot(loan,aes(LoanOriginalAmount,EstimatedLoss))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Loan Original Amount with Estimated Loss")
+```
+
+Some smaller loan will failures. Larger loans are less likely to have a loss.  
+```{r echo=FALSE}
+p1<-ggplot(loan,aes(LP_InterestandFees,EstimatedEffectiveYield))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Interest and Fees and Estimated Yield")
+p2<-ggplot(loan,aes(LP_InterestandFees,EstimatedLoss))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Interest and Fees and Estimated Loss")
+p3<-ggplot(loan,aes(LP_InterestandFees,EstimatedReturn))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare Interest and Fees and Estimated Return")
+grid.arrange(p1,p2,p3,ncol=3)
+```
+
+This can be interesting. The more you pay upfront, the less likely you default.  
+```{r echo=FALSE}
+ggplot(loan,aes(LoanOriginalAmount,MonthlyLoanPayment,color=Term))+geom_point()+
+  geom_smooth(method='lm',color='red')+
+  ggtitle("Compare LOan Original Amount and Monthly Loan Payment")
+```
+
+The scale of payment with respect to Term length.  
+```{r echo=FALSE}
+ggplot(loan,
+       aes(EstimatedEffectiveYield,DelinquenciesLast7Years))+
+  geom_jitter(alpha=1/10,position=position_jitter(h=0))+
+  ggtitle("Compare Estimated Effective Yield and Delinquencies for the last 7 years")
+ggplot(loan,
+       aes(EstimatedLoss,DelinquenciesLast7Years))+
+  geom_jitter(alpha=1/10,position=position_jitter(h=0))+
+  ggtitle("Compare Estimated Loss and Delinquencies for the last 7 years")
+```
+
+It's hard to link delinquency with estimated yield or loss.
+```{r echo=FALSE}
+ggplot(loan,aes(LP_CustomerPrincipalPayments,EstimatedLoss,color=ProsperRating_Alpha))+
+  geom_jitter(alpha=1/10,position=position_jitter(h=0))+
+  theme(text=element_text(size=20),axis.text.x=element_text(angle=90,vjust=1))+
+  ggtitle("Compare Customer Principal Payments and Estimated Loss")
+```
+
+More principal payment means less likely ends up with a loss. This diagram has a strong base of highly rated borrower consistitues of no or low loss.  
+```{r echo=FALSE}
+ggplot(loan,aes(empidx,EstimatedEffectiveYield))+geom_point()+
+  ggtitle("Compare Employment Index and Estimated Effective Yield")
+ggplot(loan,aes(empidx,EstimatedLoss))+geom_point()+
+  ggtitle("Compare Employment Index and Estimated Loss")
+```
+
+There doesn't appear to be any relationship between empolyment index I created and loss/yield.  
+```{r echo=FALSE}
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+### What was the strongest relationship you found?
+
+
+
+
+# Multivariate Plots Section
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?  
+Yield (EstimatdEffectiveYield) are closely related to rating (ProsperRating_Alpha). Ratings are closely related to each other. In this case, I am selecting ProsperRating_Alpha as the choice for study.  
+Loan status of all kinds are dispersed with rating systems.  
+Further study into the rating system found when rating is left as blank, we have a significant amount of loan failures (chargeoff and defaults).  
+### Were there any interesting or surprising interactions between features?
+Estimated return demonstrates an interesting behavior:  
+1. Loan rates tightens around loan ratings over time.  
+2. Loan rates also separates clearly around each ratings' tight range over time.  
+In other words, prosper loan has been maturing and settles via market force over time.  
+
+Yield for high quality borrowers can extend their borrowing, sometimes at a lower rate than if they raise their debt to income ratio. This is unclear based on the information we have at hand, but certainly is interesting if more data is available.  
+Listing category (reaons why people borrow money) is not a clear factor of yield/risk.  
+Employment is not a clear indicator for yield/loss analysis. The fabricated empidx (employment index) is a simple product of the two corresponding columns. There is no clear indication other function should work differently.  
+An analysis of geographical different places (states) with a combination of job segments does not have a clear indication regarding yield/return/loss median.  
+Owning a home differentiate yield and loss.  
+LoanMonthsSinceOrigination analysis indicates risk starts at aroun cycle (months) 38.  
+Smaller loans usually fails more frequently than larger loans.  
+The other analysis done for LP_InterestandFees seems to indicate more paid (upfront) could be an indication of better yield with less loss.  
+The loan with shorter term carries higher payment.  
+Delinquencies doesn't seem to have a decisive relationship with yield/loss either. This is frustrating.  
+More payment into principal is a good indicator of loan stability.  
+I spent time build up employment index, but it too failed to draw any conclusion with respect to yield/loss.  
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.  
+Attemps has been done to create such model, but outcome has not shown to be satisfactory.  
+> m<-lm(formula=I(EstimatedEffectiveYield)~IsBorrowerHomeowner+  
++          ProsperRating_numeric+LoanOriginationQuarter+DebtToIncomeRatio+  
++          ListingCategory_numeric+EmploymentStatus+EmploymentStatusDuration+  
++          occupationCategory+LoanMonthsSinceOrigination+LP_CustomerPrincipalPayments+  
++          LP_InterestandFees  
++        ,data=loan)  
+> summary(m)  
+  
+Call:  
+lm(formula = I(EstimatedEffectiveYield) ~ IsBorrowerHomeowner +  
+    ProsperRating_numeric + LoanOriginationQuarter + DebtToIncomeRatio +  
+    ListingCategory_numeric + EmploymentStatus + EmploymentStatusDuration +  
+    occupationCategory + LoanMonthsSinceOrigination + LP_CustomerPrincipalPayments +  
+    LP_InterestandFees, data = loan)  
+  
+Residuals:  
+     Min       1Q   Median       3Q      Max  
+-0.37645 -0.01064  0.00124  0.01207  0.16478  
+  
+Coefficients:  
+                                              Estimate Std. Error  t value Pr(>|t|)    
+(Intercept)                                  1.208e-01  7.842e-03   15.404  < 2e-16 ***  
+IsBorrowerHomeownerTrue                      5.182e-04  1.731e-04    2.994  0.00276 **  
+ProsperRating_numeric2                      -1.710e-03  4.027e-04   -4.245 2.19e-05 ***  
+ProsperRating_numeric3                      -4.140e-02  3.800e-04 -108.963  < 2e-16 ***  
+ProsperRating_numeric4                      -8.097e-02  3.756e-04 -215.612  < 2e-16 ***  
+ProsperRating_numeric5                      -1.161e-01  3.825e-04 -303.486  < 2e-16 ***  
+ProsperRating_numeric6                      -1.490e-01  3.870e-04 -384.974  < 2e-16 ***  
+ProsperRating_numeric7                      -1.743e-01  4.687e-04 -371.831  < 2e-16 ***  
+LoanOriginationQuarter2009 Q4                9.281e-03  1.231e-03    7.537 4.85e-14 ***  
+LoanOriginationQuarter2010 Q1                8.857e-03  1.360e-03    6.514 7.34e-11 ***  
+LoanOriginationQuarter2010 Q2                7.486e-03  1.481e-03    5.056 4.30e-07 ***  
+LoanOriginationQuarter2010 Q3               -2.455e-03  1.710e-03   -1.436  0.15106    
+LoanOriginationQuarter2010 Q4               -5.768e-03  1.939e-03   -2.974  0.00294 **  
+LoanOriginationQuarter2011 Q1                8.784e-02  2.190e-03   40.111  < 2e-16 ***  
+LoanOriginationQuarter2011 Q2                9.485e-02  2.425e-03   39.117  < 2e-16 ***  
+LoanOriginationQuarter2011 Q3                1.068e-01  2.689e-03   39.727  < 2e-16 ***  
+LoanOriginationQuarter2011 Q4                1.081e-01  2.967e-03   36.427  < 2e-16 ***  
+LoanOriginationQuarter2012 Q1                1.040e-01  3.251e-03   31.975  < 2e-16 ***  
+LoanOriginationQuarter2012 Q2                1.145e-01  3.545e-03   32.298  < 2e-16 ***  
+LoanOriginationQuarter2012 Q3                1.159e-01  3.828e-03   30.278  < 2e-16 ***  
+LoanOriginationQuarter2012 Q4                1.087e-01  4.114e-03   26.410  < 2e-16 ***  
+LoanOriginationQuarter2013 Q1                1.037e-01  4.439e-03   23.364  < 2e-16 ***  
+LoanOriginationQuarter2013 Q2                1.092e-01  4.727e-03   23.101  < 2e-16 ***  
+LoanOriginationQuarter2013 Q3                1.123e-01  5.016e-03   22.394  < 2e-16 ***  
+LoanOriginationQuarter2013 Q4                1.081e-01  5.312e-03   20.355  < 2e-16 ***  
+LoanOriginationQuarter2014 Q1                1.084e-01  5.579e-03   19.429  < 2e-16 ***  
+DebtToIncomeRatio                            2.398e-03  2.657e-04    9.025  < 2e-16 ***  
+ListingCategory_numeric1-DebtConsolidation   4.652e-03  5.296e-03    0.878  0.37975    
+ListingCategory_numeric2-HomeImprovement     4.570e-03  5.303e-03    0.862  0.38874    
+ListingCategory_numeric3-Business            6.721e-03  5.309e-03    1.266  0.20553    
+ListingCategory_numeric5-StudentUse         -9.662e-03  5.553e-03   -1.740  0.08188 .  
+ListingCategory_numeric6-Auto                4.856e-03  5.319e-03    0.913  0.36126    
+ListingCategory_numeric7-Other               5.506e-03  5.301e-03    1.039  0.29895    
+ListingCategory_numeric8-Baby&Adoption       5.408e-03  5.553e-03    0.974  0.33017    
+ListingCategory_numeric9-Boat                2.011e-04  5.871e-03    0.034  0.97267    
+ListingCategory_numeric10-CosmeticProcedure  5.210e-03  5.878e-03    0.886  0.37542    
+ListingCategory_numeric11-EngagementRing     2.830e-03  5.541e-03    0.511  0.60953    
+ListingCategory_numeric12-GreenLoans         5.379e-03  6.294e-03    0.855  0.39280    
+ListingCategory_numeric13-HouseholdExpenses  7.528e-03  5.324e-03    1.414  0.15736    
+ListingCategory_numeric14-LargePurchases     6.095e-03  5.358e-03    1.138  0.25528    
+ListingCategory_numeric15-Medical/Dental     6.442e-03  5.331e-03    1.208  0.22689    
+ListingCategory_numeric16-Motorcycle         5.406e-03  5.468e-03    0.989  0.32280    
+ListingCategory_numeric17-RV                 7.594e-03  6.221e-03    1.221  0.22219    
+ListingCategory_numeric18-Taxes              4.367e-03  5.359e-03    0.815  0.41517    
+ListingCategory_numeric19-Vacation           4.806e-03  5.365e-03    0.896  0.37040    
+ListingCategory_numeric20-WeddingLoans       6.900e-03  5.365e-03    1.286  0.19838    
+EmploymentStatusFull-time                   -9.069e-03  4.260e-04  -21.289  < 2e-16 ***  
+EmploymentStatusNot employed                -3.062e-02  2.309e-02   -1.326  0.18476     
+EmploymentStatusOther                        2.098e-03  5.317e-04    3.946 7.94e-05 ***  
+EmploymentStatusPart-time                   -1.370e-02  1.704e-03   -8.043 8.92e-16 ***  
+EmploymentStatusRetired                     -9.590e-03  1.327e-03   -7.226 5.02e-13 ***  
+EmploymentStatusSelf-employed               -5.391e-03  3.571e-03   -1.509  0.13118     
+EmploymentStatusDuration                     6.071e-07  8.839e-07    0.687  0.49218     
+occupationCategoryAssistant                  2.372e-03  8.824e-04    2.688  0.00719 **  
+occupationCategoryCivil                      1.545e-03  9.954e-04    1.552  0.12072    
+occupationCategoryExec                       5.030e-04  9.320e-04    0.540  0.58944    
+occupationCategoryHomemaker                  6.816e-03  4.992e-03    1.365  0.17210    
+occupationCategoryMedical                    1.340e-03  9.131e-04    1.467  0.14230     
+occupationCategoryMilitary                  -5.320e-03  1.108e-03   -4.800 1.59e-06 ***  
+occupationCategoryOther                      1.868e-03  8.211e-04    2.275  0.02290 *  
+occupationCategoryProfessional               6.583e-04  8.553e-04    0.770  0.44149    
+occupationCategorySales                      2.139e-03  8.929e-04    2.396  0.01658 *   
+occupationCategorySchool                     7.319e-04  9.215e-04    0.794  0.42709    
+occupationCategorySkilledLabor               2.180e-03  8.861e-04    2.460  0.01388 *    
+occupationCategoryTradesman                  2.915e-03  1.066e-03    2.734  0.00626 **   
+LoanMonthsSinceOrigination                   1.272e-03  1.033e-04   12.317  < 2e-16 ***  
+LP_CustomerPrincipalPayments                -6.527e-07  2.798e-08  -23.324  < 2e-16 ***  
+LP_InterestandFees                           6.046e-06  9.323e-08   64.856  < 2e-16 ***  
+---  
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1  
+
+Residual standard error: 0.02307 on 77475 degrees of freedom  
+  (36394 observations deleted due to missingness)  
+Multiple R-squared:  0.8829,  Adjusted R-squared:  0.8828   
+F-statistic:  8721 on 67 and 77475 DF,  p-value: < 2.2e-16  
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+xx<-loan %>%
+  group_by(LoanOriginationQuarter,ProsperRating_Alpha) %>%
+  summarise(EEffReturn_mean=mean(EstimatedReturn, na.rm=TRUE),
+            EEffReturn_sd=sd(EstimatedReturn, na.rm=TRUE),
+            EEffReturn_median=median(EstimatedReturn, na.rm=TRUE),
+            n=n()) %>%
+  arrange(LoanOriginationQuarter,ProsperRating_Alpha)
+yy<-loan %>%
+  group_by(LoanOriginationQuarter,ProsperRating_Alpha) %>%
+  summarise(EEffLoss_mean=mean(EstimatedLoss, na.rm=TRUE),
+            EEffLoss_sd=sd(EstimatedLoss, na.rm=TRUE),
+            EEffLoss_median=median(EstimatedEffectiveYield, na.rm=TRUE),
+            n=n()) %>%
+  arrange(LoanOriginationQuarter,ProsperRating_Alpha)
+zz<-loan %>%
+  group_by(LoanOriginationQuarter,ProsperRating_Alpha) %>%
+  summarise(EEff_mean=mean(EstimatedEffectiveYield, na.rm=TRUE),
+            EEff_sd=sd(EstimatedEffectiveYield, na.rm=TRUE),
+            EEff_median=median(EstimatedEffectiveYield, na.rm=TRUE),
+            n=n()) %>%
+  arrange(LoanOriginationQuarter,ProsperRating_Alpha)
+
+ggplot(xx)+geom_line(aes(x=LoanOriginationQuarter,y=EEffReturn_median,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha))+
+  geom_point(aes(x=LoanOriginationQuarter,y=EEffReturn_sd,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha))+
+  geom_line(aes(x=LoanOriginationQuarter,y=EEffReturn_sd,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha),linetype="dashed", size = 1.5)+
+  geom_point(aes(x=LoanOriginationQuarter,y=EEffReturn_sd,group=ProsperRating_Alpha,
+                color=ProsperRating_Alpha),shape="cond", size = 1.5)+
+  ggtitle("Effective Return Median along Loan Original Quarter/thin line median/broken line s.d.")
+ggplot(yy)+geom_line(aes(x=LoanOriginationQuarter,y=EEffLoss_median,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha))+
+  geom_line(aes(x=LoanOriginationQuarter,y=EEffLoss_sd,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha),linetype="dashed", size = 1.5)+
+  ggtitle("Effective Loss Median along Loan Original Quarter/thin line median/broken line s.d.")
+ggplot(zz)+geom_line(aes(x=LoanOriginationQuarter,y=EEff_median,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha))+
+  geom_line(aes(x=LoanOriginationQuarter,y=EEff_sd,group=ProsperRating_Alpha,
+      color=ProsperRating_Alpha),linetype="dashed", size = 1.5)+
+  ggtitle("Effective Estimated Yield Median along Loan Original Quarter/thin line median/broken line s.d.")
+```
+
+### Description One  
+
+In this drawing, it is clear standard deviation represented by broken lines are higher at the beginning of 2009 when this rating started. As time moves on, standard deviation has been lowered consistently. As a result, the solid lines which represents the average of yield/loss/return, has a similiar behavior.  
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+ggplot(loan,aes(DebtToIncomeRatio,EstimatedEffectiveYield,color=ProsperRating_Alpha))+
+  geom_line(stat='summary',fun.y=mean)+
+  ggtitle("Estimated Effective Yield and Debt To Income Ratio")
+ggplot(loan,aes(DebtToIncomeRatio,EstimatedReturn,color=ProsperRating_Alpha))+
+  geom_line(stat='summary',fun.y=mean)+
+  ggtitle("Estimated Return and Debt To Income Ratio")
+ggplot(loan,aes(DebtToIncomeRatio,EstimatedLoss,color=ProsperRating_Alpha))+
+  geom_line(stat='summary',fun.y=mean)+
+  ggtitle("Estimated Loss and Debt To Income Ratio")
+```
+
+### Description Two  
+
+These diagrams shows DebtToIncomeRatio does not affect the yield/loss/return curve as I believe they should. However, there is a rather large jitter at the lower end of this ratio.
+
+### Plot Three  
+
+```{r echo=FALSE, Plot_Three}
+ggplot(loan,aes(ProsperRating_Alpha,EstimatedEffectiveYield,color=Occupation))+
+  geom_boxplot()+stat_summary(fun.y=mean,geom='point',shape=4)+
+  scale_x_discrete(limits=c("HR","E","D","C","B","A","AA",""))+
+  ggtitle("Prosper Rating Alpha and Estimated Effective Yield with Occupation break down")
+```
+
+### Description Three  
+
+
+In these diagrams, I have illustrated the ProsperRating_Alpha as an important variable to determine yield, but the various occupation does not seems to have a clear indication one way or the other.  
+
+
+------
+
+# Reflection  
+
+This project proves to be longer and bigger than I thought it should. In certain ways it is exhausting and frustrating to grip with data which turns to be futile. All adults have certain understanding how the financial world works. Although the system can be called 'inefficient', but in this example, I think it proves quite otherwise. Although it did take a while.  
+
+To a degree, I am suspecting my lack of clear finding is simply a correspondent to the fact many brillant people have been working tirelessly to make some money in this system. In the end, all the forces may just equalizes and the system returns to equilibrium. Otherwise, if such simple and clean system can be easily constructed, then it is an obvious investment opportunity. As indicated in the trend drawing, the system is tighting down.  
+
+On the other hand, there are very frustrating times when parameters should work for to build a system intuitively, they frequently don't. We can suspect if the data has not be collected with enough detail to describe the conter-intuitive behavior (such as Listig Reasons). Of course, it is also possible for consumer behavior to be random in the first place (such as in the case of occupation).  
+
+In the end, it seems I need to continue to construct new ways to analyze data. What we have learnt from the class is a starting point very nicely introduce function conversion to linearity in order to build a nice model. What happens when this type of relationship is not obvious?
